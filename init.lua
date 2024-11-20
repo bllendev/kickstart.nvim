@@ -90,6 +90,10 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+-- disable netrw at the very start of your init.lua
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
 
@@ -204,6 +208,8 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+vim.api.nvim_set_keymap('n', '<C-n>', ':NvimTreeToggle<CR>', { noremap = true, silent = true })
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -215,7 +221,6 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
-
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -254,6 +259,48 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+  },
+  {
+    'robitx/gp.nvim',
+    config = function()
+      local conf = {
+        -- Customize settings here if needed, otherwise use defaults
+      }
+      require('gp').setup(conf)
+
+      -- Key mappings for gp.nvim
+      local function keymapOptions(desc)
+        return {
+          noremap = true,
+          silent = true,
+          nowait = true,
+          desc = 'GPT prompt ' .. desc,
+        }
+      end
+
+      -- Chat commands
+      vim.keymap.set({ 'n', 'i' }, '<C-g>c', '<cmd>GpChatNew<cr>', keymapOptions 'New Chat')
+      vim.keymap.set({ 'n', 'i' }, '<C-g>t', '<cmd>GpChatToggle<cr>', keymapOptions 'Toggle Chat')
+      vim.keymap.set({ 'n', 'i' }, '<C-g>f', '<cmd>GpChatFinder<cr>', keymapOptions 'Chat Finder')
+      vim.keymap.set('v', '<C-g>c', ":<C-u>'<,'>GpChatNew<cr>", keymapOptions 'Visual Chat New')
+      vim.keymap.set('v', '<C-g>p', ":<C-u>'<,'>GpChatPaste<cr>", keymapOptions 'Visual Chat Paste')
+
+      -- Text manipulation commands
+      vim.keymap.set({ 'n', 'i' }, '<C-g>r', '<cmd>GpRewrite<cr>', keymapOptions 'Inline Rewrite')
+      vim.keymap.set({ 'n', 'i' }, '<C-g>a', '<cmd>GpAppend<cr>', keymapOptions 'Append (after)')
+      vim.keymap.set({ 'n', 'i' }, '<C-g>b', '<cmd>GpPrepend<cr>', keymapOptions 'Prepend (before)')
+      vim.keymap.set('v', '<C-g>r', ":<C-u>'<,'>GpRewrite<cr>", keymapOptions 'Visual Rewrite')
+      vim.keymap.set('v', '<C-g>a', ":<C-u>'<,'>GpAppend<cr>", keymapOptions 'Visual Append (after)')
+      vim.keymap.set('v', '<C-g>b', ":<C-u>'<,'>GpPrepend<cr>", keymapOptions 'Visual Prepend (before)')
+
+      -- Whisper commands
+      vim.keymap.set({ 'n', 'i' }, '<C-g>ww', '<cmd>GpWhisper<cr>', keymapOptions 'Whisper')
+      vim.keymap.set('v', '<C-g>ww', ":<C-u>'<,'>GpWhisper<cr>", keymapOptions 'Visual Whisper')
+
+      -- Other commands
+      vim.keymap.set({ 'n', 'i' }, '<C-g>s', '<cmd>GpStop<cr>', keymapOptions 'Stop')
+      vim.keymap.set({ 'n', 'i' }, '<C-g>n', '<cmd>GpNextAgent<cr>', keymapOptions 'Next Agent')
+    end,
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -335,7 +382,48 @@ require('lazy').setup({
     },
     vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }),
   },
-
+  {
+    'nvim-tree/nvim-tree.lua',
+    version = '*',
+    lazy = false,
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+    },
+    config = function()
+      require('nvim-tree').setup {
+        view = {
+          width = 30,
+          side = 'left',
+          mappings = {
+            list = {
+              { key = '<CR>', action = 'edit', desc = 'Open file or folder' },
+              { key = 'o', action = 'edit', desc = 'Also open file or folder' },
+              { key = 'a', action = 'create', desc = 'Create a file' },
+              { key = 'd', action = 'remove', desc = 'Delete a file or folder' },
+              { key = 'r', action = 'rename', desc = 'Rename a file or folder' },
+              { key = 'x', action = 'cut', desc = 'Cut a file' },
+              { key = 'y', action = 'copy', desc = 'Copy a file' },
+              { key = 'p', action = 'paste', desc = 'Paste a file' },
+              { key = '<BS>', action = 'close_node', desc = 'Collapse directory' },
+              { key = 'R', action = 'refresh', desc = 'Refresh the tree' },
+              { key = 'q', action = 'close', desc = 'Close nvim-tree' },
+              { key = '/', action = 'live_filter', desc = 'Search/filter the tree' },
+              -- Additional navigations
+              { key = 'j', action = 'next_sibling', desc = 'Go down' },
+              { key = 'k', action = 'prev_sibling', desc = 'Go up' },
+            },
+          },
+        },
+        filters = {
+          dotfiles = false, -- Optional: Change this according to preference
+        },
+        git = {
+          enable = true,
+          ignore = false,
+        },
+      }
+    end,
+  },
   {
     'tpope/vim-fugitive',
     cmd = { 'G', 'Gdiffsplit', 'Gblame', 'Git' }, -- Load commands lazily
@@ -348,7 +436,6 @@ require('lazy').setup({
   -- you do for a plugin at the top level, you can do for a dependency.
   --
   -- Use the `dependencies` key to specify the dependencies of a particular plugin
-
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
