@@ -149,7 +149,8 @@ require('lazy').setup({
     -- setting the keybinding for LazyGit with 'keys' is recommended in
     -- order to load the plugin when the command is run for the first time
     keys = {
-        { "<leader>lg", "<cmd>LazyGit<cr>", desc = "LazyGit" }
+        { "<leader>gl", "<cmd>LazyGit<cr>", desc = "LazyGit" },
+        { "<leader>lg", "<cmd>LazyGit<cr>", desc = '[G]it [L]azy (lazygit)' }
     }
   },
 
@@ -208,15 +209,16 @@ require('lazy').setup({
           F11 = '<F11>', F12 = '<F12>',
         },
       },
-      spec = {
-        { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
-        { '<leader>d', group = '[D]ocument' },
-        { '<leader>r', group = '[R]ename' },
-        { '<leader>s', group = '[S]earch' },
-        { '<leader>w', group = '[W]orkspace' },
-        { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
-      },
+    spec = {
+      { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
+      { '<leader>d', group = '[D]ocument' },
+      { '<leader>r', group = '[R]ename' },
+      { '<leader>s', group = '[S]earch' },
+      { '<leader>w', group = '[W]orkspace' },
+      { '<leader>t', group = '[T]oggle' },
+      { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+      { '<leader>g', group = '[G]it' },
+    },
     },
   },
 
@@ -232,10 +234,14 @@ require('lazy').setup({
 
   {
     'tpope/vim-fugitive',
-    cmd = { 'G', 'Gdiffsplit', 'Gblame', 'Git' },
-    config = function()
-      vim.keymap.set('n', '<leader>gd', ':Gdiffsplit<CR>', { desc = 'Git Diff Split', silent = true })
-    end,
+    cmd = { 'G', 'Git', 'Gdiffsplit', 'Gblame' },
+    -- Keys here create lazy-loaded mappings that load Fugitive on press
+    keys = {
+      { '<leader>gg', '<cmd>Git<cr>',        desc = '[G]it status' },
+      { '<leader>gd', '<cmd>Gdiffsplit<cr>', desc = '[G]it [D]iff split' },
+      { '<leader>gb', '<cmd>Gblame<cr>',     desc = '[G]it [B]lame' },
+      { '<leader>gp', '<cmd>Git push<cr>',   desc = '[G]it [P]ush' },
+    },
   },
 
   {
@@ -319,6 +325,7 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
+      -- LSP keymaps on attach
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
@@ -327,32 +334,56 @@ require('lazy').setup({
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
           map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
-          map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+          map('gr', require('telescope.builtin').lsp_references,  '[G]oto [R]eferences')
           map('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
           map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
-          map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+          map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]oc [S]ymbols')
           map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
           map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
         end,
       })
-      local capabilities = vim.tbl_deep_extend('force', vim.lsp.protocol.make_client_capabilities(), require('cmp_nvim_lsp').default_capabilities())
-      local servers = { 'pyright', 'tsserver' }
-      local ensure_installed = vim.tbl_keys(servers)
-      vim.list_extend(ensure_installed, { 'stylua' })
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
-      require('mason-lspconfig').setup {
+
+      local capabilities = vim.tbl_deep_extend(
+        'force',
+        vim.lsp.protocol.make_client_capabilities(),
+        require('cmp_nvim_lsp').default_capabilities()
+      )
+
+      -- Use a MAP so tbl_keys returns server names (strings), not numbers.
+      -- NOTE: We omit tsserver here because you already use pmizio/typescript-tools.nvim.
+      local servers = {}
+
+      -- Tools managed by mason-tool-installer (LSPs + formatters/linters/etc.)
+      local ensure = vim.tbl_keys(servers)
+      -- vim.list_extend(ensure, {
+      --   -- 'stylua',  -- Lua formatter
+      --   -- add other formatters/linters you want ensured globally
+      -- })
+
+      require('mason-tool-installer').setup({ ensure_installed = ensure })
+
+      require('mason-lspconfig').setup({
         automatic_installation = true,
-        ensure_installed = ensure_installed,
+        ensure_installed = vim.tbl_keys(servers),
         handlers = {
           function(server_name)
+            -- Skip tsserver/ts_ls here if you keep typescript-tools
+            if server_name == 'tsserver' or server_name == 'ts_ls' then
+              return
+            end
             local server_config = servers[server_name] or {}
-            server_config.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_config.capabilities or {})
+            server_config.capabilities = vim.tbl_deep_extend(
+              'force',
+              {},
+              capabilities,
+              server_config.capabilities or {}
+            )
             require('lspconfig')[server_name].setup(server_config)
           end,
         },
-      }
+      })
     end,
   },
 
