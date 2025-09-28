@@ -155,6 +155,14 @@ require('lazy').setup({
   },
 
   {
+    'tpope/vim-fugitive',
+
+    config = function()
+      vim.keymap.set('n', '<leader>gd', ':Gdiffsplit<CR>', { desc = "Show Git differences" })
+    end,
+  },
+
+  {
     'ThePrimeagen/harpoon',
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
@@ -228,20 +236,15 @@ require('lazy').setup({
     opts = { open_mapping = [[<C-\>]], direction = 'horizontal', start_in_insert = true },
     config = function(_, opts)
       require('toggleterm').setup(opts)
-      vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
-    end,
-  },
 
-  {
-    'tpope/vim-fugitive',
-    cmd = { 'G', 'Git', 'Gdiffsplit', 'Gblame' },
-    -- Keys here create lazy-loaded mappings that load Fugitive on press
-    keys = {
-      { '<leader>gg', '<cmd>Git<cr>',        desc = '[G]it status' },
-      { '<leader>gd', '<cmd>Gdiffsplit<cr>', desc = '[G]it [D]iff split' },
-      { '<leader>gb', '<cmd>Gblame<cr>',     desc = '[G]it [B]lame' },
-      { '<leader>gp', '<cmd>Git push<cr>',   desc = '[G]it [P]ush' },
-    },
+      -- Exit terminal mode using <Esc> key
+      vim.keymap.set('t', '<Esc>', [[<C-\><C-n>]], { desc = 'Exit terminal mode' })
+
+      -- Toggle different terminal instances using specific key mappings
+      vim.keymap.set('n', '<C-\\>', function() require('toggleterm').toggle(1) end, { desc = 'Toggle terminal 1' })
+      vim.keymap.set('n', '<C-]>', function() require('toggleterm').toggle(2) end, { desc = 'Toggle terminal 2' })
+      vim.keymap.set('n', '<C-=>', function() require('toggleterm').toggle(3) end, { desc = 'Toggle terminal 3' })
+    end
   },
 
   {
@@ -352,8 +355,7 @@ require('lazy').setup({
       )
 
       -- Use a MAP so tbl_keys returns server names (strings), not numbers.
-      -- NOTE: We omit tsserver here because you already use pmizio/typescript-tools.nvim.
-      local servers = {}
+      local servers = {}  --omit tsserver bc of ts tools
 
       -- Tools managed by mason-tool-installer (LSPs + formatters/linters/etc.)
       local ensure = vim.tbl_keys(servers)
@@ -369,7 +371,7 @@ require('lazy').setup({
         ensure_installed = vim.tbl_keys(servers),
         handlers = {
           function(server_name)
-            -- Skip tsserver/ts_ls here if you keep typescript-tools
+            -- skip tsserver/ts_ls here if you keep typescript-tools
             if server_name == 'tsserver' or server_name == 'ts_ls' then
               return
             end
@@ -385,6 +387,18 @@ require('lazy').setup({
         },
       })
     end,
+  },
+
+  {
+    "pmizio/typescript-tools.nvim",
+    dependencies = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
+    opts = {
+      on_attach = function(client)
+        -- disable tsserver formatting
+        client.server_capabilities.documentFormattingProvider = false
+        client.server_capabilities.documentRangeFormattingProvider = false
+      end,
+    },
   },
 
   {
@@ -413,8 +427,6 @@ require('lazy').setup({
     },
     config = function(_, opts) require('conform').setup(opts) end,
   },
-
-  { 'pmizio/typescript-tools.nvim', dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' }, opts = {} },
 
   { -- Autocompletion
     'hrsh7th/nvim-cmp',
@@ -479,7 +491,7 @@ require('lazy').setup({
     'folke/tokyonight.nvim',
     priority = 1000, -- load this before all the other start plugins !
     init = function()
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'tokyonight-moon'
       vim.cmd.hi 'Comment gui=none'
     end,
   },
