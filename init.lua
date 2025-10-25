@@ -174,7 +174,7 @@ require('lazy').setup({
       }
       vim.keymap.set('n', '<leader>ha', require('harpoon.mark').add_file, { desc = 'Harpoon Add File' })
       vim.keymap.set('n', '<leader>he', require('harpoon.ui').toggle_quick_menu, { desc = 'Harpoon Edit Menu' })
-      for i = 1, 6 do
+      for i = 1, 7 do
         vim.keymap.set('n', '<leader>h' .. i, function()
           require('harpoon.ui').nav_file(i)
         end, { desc = 'Go to File ' .. i })
@@ -228,23 +228,6 @@ require('lazy').setup({
       { '<leader>g', group = '[G]it' },
     },
     },
-  },
-
-  {
-    'akinsho/toggleterm.nvim',
-    version = '*',
-    opts = { open_mapping = [[<C-\>]], direction = 'horizontal', start_in_insert = true },
-    config = function(_, opts)
-      require('toggleterm').setup(opts)
-
-      -- Exit terminal mode using <Esc> key
-      vim.keymap.set('t', '<Esc>', [[<C-\><C-n>]], { desc = 'Exit terminal mode' })
-
-      -- Toggle different terminal instances using specific key mappings
-      vim.keymap.set('n', '<C-\\>', function() require('toggleterm').toggle(1) end, { desc = 'Toggle terminal 1' })
-      vim.keymap.set('n', '<C-]>', function() require('toggleterm').toggle(2) end, { desc = 'Toggle terminal 2' })
-      vim.keymap.set('n', '<C-=>', function() require('toggleterm').toggle(3) end, { desc = 'Toggle terminal 3' })
-    end
   },
 
   {
@@ -538,4 +521,39 @@ require('lazy').setup({
   { import = 'custom.plugins' },
 
 })
--- -- vim: ts=2 sts=2 sw=2 et
+
+-- ============================================================================
+-- Terminal Toggler Setup
+-- ============================================================================
+local T = require('toggler.terms')
+
+-- NORMAL mode: Use Ctrl+\ followed by 1/2/3 to toggle terminals
+vim.keymap.set('n', '<C-\\>1', function() T.toggle(1) end, { desc = 'Toggle Terminal 1' })
+vim.keymap.set('n', '<C-\\>2', function() T.toggle(2) end, { desc = 'Toggle Terminal 2' })
+vim.keymap.set('n', '<C-\\>3', function() T.toggle(3) end, { desc = 'Toggle Terminal 3' })
+vim.keymap.set('n', '<C-\\>4', function() T.toggle(4) end, { desc = 'Toggle Terminal 4' })
+vim.keymap.set('n', '<C-\\>5', function() T.toggle(5) end, { desc = 'Toggle Terminal 5' })
+
+-- TERMINAL mode: Same keys to toggle from inside terminal
+vim.keymap.set('t', '<C-\\>1', [[<C-\><C-n><Cmd>lua require('toggler.terms').toggle(1)<CR>]], { desc = 'Toggle Terminal 1', silent = true })
+vim.keymap.set('t', '<C-\\>2', [[<C-\><C-n><Cmd>lua require('toggler.terms').toggle(2)<CR>]], { desc = 'Toggle Terminal 2', silent = true })
+vim.keymap.set('t', '<C-\\>3', [[<C-\><C-n><Cmd>lua require('toggler.terms').toggle(3)<CR>]], { desc = 'Toggle Terminal 3', silent = true })
+vim.keymap.set('t', '<C-\\>4', [[<C-\><C-n><Cmd>lua require('toggler.terms').toggle(4)<CR>]], { desc = 'Toggle Terminal 4', silent = true })
+vim.keymap.set('t', '<C-\\>5', [[<C-\><C-n><Cmd>lua require('toggler.terms').toggle(5)<CR>]], { desc = 'Toggle Terminal 5', silent = true })
+
+-- Use <Esc><Esc> to exit terminal mode to normal mode
+vim.keymap.set('t', '<Esc><Esc>', [[<C-\><C-n>]], { desc = 'Exit terminal mode', silent = true })
+
+-- Terminal-specific settings: disable line numbers and sign column
+vim.api.nvim_create_autocmd('TermOpen', {
+  pattern = 'term://*',
+  callback = function()
+    vim.opt_local.number = false
+    vim.opt_local.relativenumber = false
+    vim.opt_local.signcolumn = 'no'
+    vim.cmd('startinsert')
+  end,
+  desc = 'Terminal settings',
+})
+
+-- vim: ts=2 sts=2 sw=2 et
